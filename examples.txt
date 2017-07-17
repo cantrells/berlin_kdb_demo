@@ -1,0 +1,61 @@
+datasource:
+https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95
+
+/ example commands
+
+collisionData:loadData["DNSSFF****IIIIIIII*****SSSSSS";`:raw/NYPD_Motor_Vehicle_Collisions.csv]
+
+/ query to show the top places for accidents causing injury
+/ bucketed into approx 11m squared area
+`injuries xdesc 
+  select 
+    injuries:sum number_of_persons_injured, last borough
+  by 
+    lat:0.0001 xbar latitude, lon:0.0001 xbar longitude 
+  from 
+    collisionData where not null latitude
+
+/ injuries broken down by hour and pivoted on month
+pivotOnMonth {select from x where not null month}select accidents:count i by 0D01 xbar time,monthMap month-1 from update month:`mm$date from collisionData where number_of_persons_injured>0
+
+/ injuries broken down by hour and pivoted on month
+/ analysing the accidents which had a slippery pavement as it's primary cause
+pivotOnMonth {select from x where not null month}
+  select accidents:count i by 0D01 xbar time,monthMap month-1 from 
+   (update month:`mm$date from collisionData) 
+     where contributing_factor_vehicle_1 like "Pavement Slippery"
+
+/ saving data one table file
+save `:data/collisionData
+
+/ save as a historical database partitioned by date
+/ optimisied for queries on a specified field - borough
+/ ensure we are only saving data with a valid date, as we are partitioning on that field
+saveAll[`:db;`borough;`collisions;select from collisionData where not null date]
+/ saving by year is more efficient for this dataset
+/ can partition a datbase on date, month, year or int (int can then be mapped to anything as needed for more unconventional datasets)
+saveAllYearDB[`:dbYear;`borough;`collisions;select from collisionData where not null date]
+
+
+/ you can start up a hdb by loading in that directory into a q session:
+q)\l dbYear
+q)select count i by year from collisions
+year| x     
+----| ------
+2012| 100527
+2013| 203716
+2014| 205985
+2015| 217641
+2016| 227762
+2017| 113619
+
+
+resources:
+download kdb+
+    http://kx.com/download/
+install: 
+    http://code.kx.com/q/tutorials/install/
+
+http://code.kx.com/q/
+http://code.kx.com/q/developer/
+
