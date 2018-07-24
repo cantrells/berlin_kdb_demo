@@ -14,6 +14,7 @@ loadData:{[types;file]
   };
 
 / exact same function as above, but written in k
+/ collisionData:loadDataK["DNSSFF****IIIIIIII*****SSSSSS";`:raw/NYPD_Motor_Vehicle_Collisions.csv]
 k)loadDataK:{[types;file]
 	 {c:`${.q.lower ?[x=" ";"_";x]}'$:!:d:+:x;+:c!.:d}(types;(),",")0:file};
 
